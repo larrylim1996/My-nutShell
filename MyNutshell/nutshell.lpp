@@ -1,0 +1,54 @@
+%{
+    #include <string.h>
+    #include "nutshell.tab.hpp"
+
+
+    char* expand (char* s){
+	return strdup(s);
+    }
+%}
+
+%option noyywrap
+
+%%
+
+"bye" | <<EOF>>     			{ return EXIT; }
+
+[\<\>\|]            			{ return yytext[0]; }
+
+setenv					{ yylval.str = strdup(yytext);cout<<"SETENV"<<endl; return COMMAND; }
+
+printenv				{ yylval.str = strdup(yytext);cout<<"printenv"<<endl; return COMMAND; }
+
+cd					{ yylval.str = strdup(yytext);cout<<"cd"<<endl; return COMMAND; }
+
+alias					{ yylval.str = strdup(yytext);cout<<"alias"<<endl; return COMMAND; }
+	
+unalias					{ yylval.str = strdup(yytext); cout<<"unalias"<<endl; return COMMAND; }
+
+cmd					{ yylval.str = strdup(yytext); cout<<"cmd: "<<yylval.str<<endl; return COMMAND; }
+
+(\*)|[^ \t\n\r\f\v]*(\*)[^ \t\n\r\f\v]*|(\?)|\*|[^ \t\n\r\f\v]*(\?)[^ \t\n\r\f\v]*	{ yylval.str = strdup(yytext); cout<<"FOUND WILDCARD: "<<yylval.str<<endl; return WILDCARD; }
+
+(\|)|\*|[^ \t\n\r\f\v]*(\|)[^ \t\n\r\f\v]*	{ yylval.str = strdup(yytext);cout<<"found OR"<<endl; return ORS; }
+
+\.\.					{ yylval.str = strdup(yytext); cout<<"FOUND DBL DOT"<<yylval.str<<endl; return DBLDOT; }
+
+\.					{ yylval.str = strdup(yytext); cout<<"FOUND DOT"<<endl; return DOT; }
+
+\~					{ yylval.str = strdup(yytext); cout<<"FOUND TILDE"<<endl; return TILDE; }
+
+([\\]([\*]|[\\]|[\<]|[\>]|[\|]|[\"]|[\\]|[\&]))+	{ yylval.str = strdup(yytext); cout<<"META FOUND: "<< yylval.str<<endl; return METACHAR; }
+
+\"(\\.|[^"\\])*\"			{ yylval.str = strdup(yytext); return WORD; }
+
+[^ <>\|\\\"\n\t]+			{yylval.str = expand(yytext); return WORD; }
+
+[\n]					{ return STOP; }
+
+[ \t\&]+				{ }
+
+.					{cerr << "Unrecognized token starting with "<<yytext[0] <<endl; }
+
+
+%%

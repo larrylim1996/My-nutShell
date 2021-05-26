@@ -1,0 +1,52 @@
+%code requires {
+    #include <iostream>
+    #include <cstdlib>
+    #include "nutshell.hpp"
+    using namespace std;
+
+    int yylex(); 
+}
+
+%code {
+    void yyerror(const char* description) { 
+    	cerr << description << endl; 
+    }
+}
+
+%define parse.error verbose
+
+%union {
+    char* str;
+};
+
+%token <str> WORD
+%token <str> COMMAND
+%token <str> WILDCARD
+%token <str> DOT
+%token <str> DBLDOT
+%token <str> TILDE
+%token STOP EXIT
+
+%%
+
+program: line       { YYACCEPT; }
+| EXIT              { cout << "Goodbye!\n"; exit(0); }
+
+line: fullcmd STOP      {cout<<"STOP FOUND: "<<$1<<endl; free($1);}
+
+fullcmd: cmd      	{cout<<"FULLCMD FOUND: "<<$1<<endl; free($1);}
+| fullcmd '|' cmd	{cout<<"Piping \| FOUND: "<<$1<<endl; free($1);}
+
+cmd: exe			{cout<<"CMD FOUND: "<<$1<<endl; free($1);}
+| exe arg			{cout<<"CMD WORD FOUND: "<<$1<<endl; free($1);}
+| exe args			{cout<<"CMD WILDCARD FOUND: "<<$1<<endl; free($1);}
+
+exe: WORD			{cout<<"EXE WORD FOUND: "<<$1<<endl; free($1);}
+| exe WILDCARD		{cout<<"EXE WILDCARD FOUND: "<<$1<<endl; free($1);}
+
+args: WORD			{cout<<"WORD FOUND: "<<$1<<endl; free($1);}
+|args WORD			{cout<<"WORD FOUND: "<<$1<<endl; free($1);}
+
+arg: WILDCARD		{cout<<"WILDCARD FOUND: "<<$1<<endl; free($1);}
+
+%%
